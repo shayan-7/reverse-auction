@@ -1,0 +1,19 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: uniproject
+    ports:
+      - 8081:8081
+    networks:
+      - menu_read_model
+    command: '/app/main'
+
+networks:
+  menu_read_model:
+    name: menu_read_model
+
+volumes:
+  menu_read_model:
+    name: menu_read_model

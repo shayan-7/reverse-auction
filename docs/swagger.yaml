@@ -1,0 +1,201 @@
+definitions:
+  handlers.Bid:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      is_accepted:
+        type: boolean
+      price:
+        type: number
+      product_id:
+        type: integer
+      seller_id:
+        type: integer
+    type: object
+  handlers.Product:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      status:
+        $ref: '#/definitions/handlers.Status'
+      title:
+        type: string
+      user:
+        $ref: '#/definitions/handlers.User'
+      user_id:
+        type: integer
+    type: object
+  handlers.Status:
+    enum:
+    - 0
+    - 1
+    type: integer
+    x-enum-varnames:
+    - Active
+    - Accepted
+  handlers.User:
+    properties:
+      id:
+        type: integer
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    name: Reverse Auction Team
+  description: API for the reverse auction project
+  title: Reverse Auction API
+  version: "1.0"
+paths:
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Log in by providing a username and password.
+      parameters:
+      - description: User login details
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Log in as a user
+  /products:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all products with optional sorting and filtering.
+      parameters:
+      - description: Sort field (e.g., title, price)
+        in: query
+        name: sort
+        type: string
+      - description: Filter products by name
+        in: query
+        name: filter
+        type: string
+      - description: Filter products by user id
+        in: query
+        name: user_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.Product'
+            type: array
+      summary: List all products
+    post:
+      consumes:
+      - application/json
+      description: Register a new product by providing details such as name, description,
+        and buyer's ID.
+      parameters:
+      - description: Product details
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.Product'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.Product'
+      summary: Register a new product
+  /products/{id}/offers:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of offers for a specific product.
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.Bid'
+            type: array
+      security:
+      - ApiKeyAuth: []
+      summary: Get offers for a product
+    post:
+      consumes:
+      - application/json
+      description: Make an offer on a product that is requested by a buyer.
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Offer details
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.Bid'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.Bid'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Make an offer on a product
+  /signup:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user by providing a unique username and password.
+      parameters:
+      - description: User registration details
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register a new user
+swagger: "2.0"
