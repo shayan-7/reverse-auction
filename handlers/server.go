@@ -3,6 +3,7 @@ package handlers
 import (
 	"log"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"github.com/swaggo/files"
@@ -28,6 +29,11 @@ func Run() {
 	// Set up the HTTP router
 	router := gin.Default()
 
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowAllOrigins = true
+	corsConfig.AllowHeaders = append(corsConfig.AllowHeaders, "authorization")
+	router.Use(cors.New(corsConfig))
+
 	// Define routes
 	router.POST("/admin", createAdmin)
 	router.POST("/signup", signUp)
@@ -48,6 +54,8 @@ func Run() {
 
 	productAuthGroup.POST("/offers/:id/discard", discardOffer)
 	productAuthGroup.POST("/offers/:id/approve", approveOffer)
+	productAuthGroup.POST("/offers/:id/reject", acceptOffer)
+	productAuthGroup.POST("/offers/:id/accept", rejectOffer)
 
 	productGroup := apiGroup.Group("")
 	productGroup.GET("/products", listProducts)

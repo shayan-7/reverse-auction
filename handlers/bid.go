@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -9,7 +10,7 @@ import (
 
 // Assuming you have a Bid model
 type Bid struct {
-	ID          uint    `gorm:"primary_key"`
+	ID          uint    `json:"id" gorm:"primary_key"`
 	ProductID   uint    `json:"product_id"`
 	SellerID    uint    `json:"seller_id"`
 	Price       float64 `json:"price"`
@@ -89,6 +90,108 @@ func getOffers(c *gin.Context) {
 	db.Where("product_id = ?", product.ID).Find(&offers)
 
 	c.JSON(http.StatusOK, offers)
+}
+
+// @Summary Reject an offer
+// @Description Accept an offer for a product by the requester.
+// @Accept json
+// @Produce json
+// @Param id path int true "Offer ID"
+// @Security ApiKeyAuth
+// @Success 204 "No Content"
+// @Failure 400 {object} map[string]interface{}
+// @Router /offers/{id}/reject [put]
+func rejectOffer(c *gin.Context) {
+	offerID := c.Param("id")
+
+	// Check if the user is authenticated and authorized to accept offers
+	userID, err := extractSellerIDFromToken(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or missing token"})
+		return
+	}
+
+	// Fetch the offer from the database
+	var offer Bid
+	if err := db.Where("id = ?", offerID).First(&offer).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Offer not found"})
+		return
+	}
+
+	// Check if the user is the requester of the product
+	var product Product
+	if err := db.Where("id = ?", offer.ProductID).First(&product).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch product"})
+		return
+	}
+
+	if product.UserID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied"})
+		return
+	}
+
+	// Mark the offer as accepted (perform your logic here)
+	// For example, update the status of the offer in the database
+	offer.IsAccepted = false
+	db.Save(&offer)
+
+	c.Status(http.StatusNoContent)
+}
+
+// @Summary Accept an offer
+// @Description Accept an offer for a product by the requester.
+// @Accept json
+// @Produce json
+// @Param id path int true "Offer ID"
+// @Security ApiKeyAuth
+// @Success 204 "No Content"
+// @Failure 400 {object} map[string]interface{}
+// @Router /offers/{id}/accept [put]
+func acceptOffer(c *gin.Context) {
+	offerID := c.Param("id")
+
+	// Check if the user is authenticated and authorized to accept offers
+	userID, err := extractSellerIDFromToken(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or missing token"})
+		return
+	}
+
+	// Fetch the offer from the database
+	var offer Bid
+	if err := db.Where("id = ?", offerID).First(&offer).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Offer not found"})
+		return
+	}
+
+	// Check if the user is the requester of the product
+	var product Product
+	if err := db.Where("id = ?", offer.ProductID).First(&product).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch product"})
+		return
+	}
+
+	log.Println(">>>>: ", product.UserID)
+
+	if product.UserID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied"})
+		return
+	}
+
+	// Mark the offer as accepted (perform your logic here)
+	// For example, update the status of the offer in the database
+	offer.IsAccepted = true
+	db.Save(&offer)
+
+	c.Status(http.StatusNoContent)
 }
 
 // Helper function to extract seller ID from the token
